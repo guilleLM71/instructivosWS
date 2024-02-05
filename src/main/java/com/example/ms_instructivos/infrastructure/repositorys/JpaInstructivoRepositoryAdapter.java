@@ -6,6 +6,7 @@ import com.example.ms_instructivos.infrastructure.entitys.InstructivoEntity;
 import com.example.ms_instructivos.infrastructure.repositorys.dto.InstructivoDto;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -58,11 +59,16 @@ public class JpaInstructivoRepositoryAdapter implements IInstructivosRepositoryP
     }
 
     @Override
-    public Optional<Instructivo> update(Integer id_instructivo) {
+    public Optional<Instructivo> update(Integer id_instructivo, boolean anular) {
         if (jpaInstructivoRepository.existsById(id_instructivo)){
             Instructivo instructivoExiste = findById(id_instructivo).get();
-            instructivoExiste.setEstado(true);
-            instructivoExiste.setVigencia(true);
+            if (anular) {
+                instructivoExiste.setVigencia(false);
+                instructivoExiste.setFecha_fin(new Date());
+            }else {
+                instructivoExiste.setEstado(true);
+                instructivoExiste.setVigencia(true);
+            }
             InstructivoEntity instructivoEntity = InstructivoEntity.fromDomainModel(instructivoExiste);
             InstructivoEntity instructivoEntityUpdate = jpaInstructivoRepository.save(instructivoEntity);
             return Optional.of(instructivoEntityUpdate.toDomainModel());

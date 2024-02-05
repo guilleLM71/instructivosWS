@@ -4,6 +4,7 @@ import com.example.ms_instructivos.aplication.services.InstructivoService;
 import com.example.ms_instructivos.aplication.usecases.AddImageToPDFUseCaseImpl;
 import com.example.ms_instructivos.aplication.usecases.FileUploadUseCaseImpl;
 import com.example.ms_instructivos.aplication.usecases.GeneratorQRUseCaseImpl;
+import com.example.ms_instructivos.aplication.usecases.PDFWaterMarkUseCaseImpl;
 import com.example.ms_instructivos.domain.models.Instructivo;
 import com.example.ms_instructivos.domain.ports.outputs.ExternalMinioServicePort;
 import com.example.ms_instructivos.infrastructure.repositorys.dto.InstructivoDto;
@@ -25,13 +26,15 @@ public class InstructivoController {
     private final GeneratorQRUseCaseImpl generatorQRUseCase;
     private final AddImageToPDFUseCaseImpl addImageToPDFUseCase;
     private final ExternalMinioServicePort externalMinioServicePort;
+    private final PDFWaterMarkUseCaseImpl pdfWaterMarkUseCase;
 
-    public InstructivoController(InstructivoService instructivoService, FileUploadUseCaseImpl fileUploadUseCase, GeneratorQRUseCaseImpl generatorQRUseCase, AddImageToPDFUseCaseImpl addImageToPDFUseCase, ExternalMinioServicePort externalMinioServicePort) {
+    public InstructivoController(InstructivoService instructivoService, FileUploadUseCaseImpl fileUploadUseCase, GeneratorQRUseCaseImpl generatorQRUseCase, AddImageToPDFUseCaseImpl addImageToPDFUseCase, ExternalMinioServicePort externalMinioServicePort, PDFWaterMarkUseCaseImpl pdfWaterMarkUseCase) {
         this.instructivoService = instructivoService;
         this.fileUploadUseCase = fileUploadUseCase;
         this.generatorQRUseCase = generatorQRUseCase;
         this.addImageToPDFUseCase = addImageToPDFUseCase;
         this.externalMinioServicePort = externalMinioServicePort;
+        this.pdfWaterMarkUseCase = pdfWaterMarkUseCase;
     }
 
     @PostMapping
@@ -89,6 +92,24 @@ public class InstructivoController {
                 .map(Instructivo -> new ResponseEntity<>(Instructivo,HttpStatus.OK))
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Instructivo> delete(@PathVariable Integer id){
+        return instructivoService.eliminarInstructivo(id)
+                ? new ResponseEntity<>(HttpStatus.OK)
+                : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/anular/{id}")
+    public ResponseEntity<Instructivo> updateAnular(@PathVariable Integer id) throws IOException {
+        String docs = externalMinioServicePort.getFile(id+".pdf");
+        System.out.println(docs);
+        pdfWaterMarkUseCase.addWatermark(docs,docs,"NO VIGENTE");
+        return instructivoService.anularInstructivo(id)
+                .map(Instructivo -> new ResponseEntity<>(Instructivo,HttpStatus.OK))
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
 
 }
 

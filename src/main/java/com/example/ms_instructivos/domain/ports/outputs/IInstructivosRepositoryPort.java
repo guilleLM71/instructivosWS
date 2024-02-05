@@ -13,6 +13,7 @@ public interface IInstructivosRepositoryPort {
     boolean delete(Integer id_instructivo);
     Optional<Instructivo> findById(Integer id_instructivo);
     List<Instructivo> findAll();
-    Optional<Instructivo> update(Integer id_instructivo);
+    Optional<Instructivo> update(Integer id_instructivo, boolean anular);
+
 
 }

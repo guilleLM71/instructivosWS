@@ -43,7 +43,13 @@ public class InstructivoUseCaseImpl implements IInstructivosUseCase {
 
     @Override
     public Optional<Instructivo> actualizarVigenciaAprobado(Integer id_instructivo) {
-        return iInstructivosRepositoryPort.update(id_instructivo);
+        return iInstructivosRepositoryPort.update(id_instructivo, false);
+
+    }
+
+    @Override
+    public Optional<Instructivo> anularInstructivo(Integer id_instructivo) {
+        return iInstructivosRepositoryPort.update(id_instructivo, true);
 
     }
 }

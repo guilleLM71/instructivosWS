@@ -12,5 +12,5 @@ public interface ExternalMinioServicePort {
 
     void uploadFile(String fileName, String folder) throws IOException;
 
-    byte[] getFile(String key);
+    String getFile(String key);
 }

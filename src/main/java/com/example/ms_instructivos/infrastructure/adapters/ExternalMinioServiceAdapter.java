@@ -1,10 +1,13 @@
 package com.example.ms_instructivos.infrastructure.adapters;
+
 import com.example.ms_instructivos.domain.ports.outputs.ExternalMinioServicePort;
 import com.example.ms_instructivos.infrastructure.config.MinioConfig;
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.messages.Bucket;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +45,7 @@ public class ExternalMinioServiceAdapter implements ExternalMinioServicePort {
     @Override
     public void uploadFile(String fileName, String folder) throws IOException {
         File file = new File(fileName);
-        String path = folder+"/"+file.getName();
+        String path = folder + "/" + file.getName();
         FileInputStream fis = new FileInputStream(file);
         try {
             InputStream inputStream = fis;
@@ -58,24 +61,25 @@ public class ExternalMinioServiceAdapter implements ExternalMinioServicePort {
     }
 
     @Override
-    public byte[] getFile(String key) {
-        return new byte[0];
+    public String getFile(String fileName) {
+
+        String path = "instructivos_escaneados/" + fileName;
+        try {
+            InputStream obj = minioClient.getObject(GetObjectArgs
+                                                    .builder()
+                                                    .bucket(defaultBucketName)
+                                                    .object(path)
+                                                    .build());
+
+            //File destinationDir = new File("C://docs");
+            File destinationFile = new File("C://docs", fileName);
+            FileUtils.copyInputStreamToFile(obj, destinationFile);
+            obj.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "C://docs//"+fileName;
     }
-
-
-//    @Override
-//    public byte[] getFile(String key) {
-//        try {
-//            InputStream obj = minioClient.getObject(defaultBucketName, defaultBaseFolder + "/" + key);
-//
-//            byte[] content = IOUtils.toByteArray(obj);
-//            obj.close();
-//            return content;
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
 
 }
 

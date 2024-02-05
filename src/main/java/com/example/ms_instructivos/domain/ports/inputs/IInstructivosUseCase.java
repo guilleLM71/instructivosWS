@@ -17,4 +17,6 @@ public interface IInstructivosUseCase {
 
     List<Instructivo> obtenerInstructivos();
     Optional<Instructivo> actualizarVigenciaAprobado(Integer id_instructivo);
+
+    Optional<Instructivo> anularInstructivo(Integer id);
 }

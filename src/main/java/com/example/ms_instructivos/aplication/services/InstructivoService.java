@@ -45,4 +45,9 @@ public class InstructivoService implements IInstructivosUseCase {
         return iInstructivosUseCase.actualizarVigenciaAprobado(id_instructivo);
 
     }
+
+    @Override
+    public Optional<Instructivo> anularInstructivo(Integer id_instructivo) {
+        return iInstructivosUseCase.anularInstructivo(id_instructivo);
+    }
 }
