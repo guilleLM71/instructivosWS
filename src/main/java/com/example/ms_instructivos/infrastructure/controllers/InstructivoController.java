@@ -1,13 +1,19 @@
 package com.example.ms_instructivos.infrastructure.controllers;
 
 import com.example.ms_instructivos.aplication.services.InstructivoService;
+import com.example.ms_instructivos.aplication.services.TipoInstructivoService;
 import com.example.ms_instructivos.aplication.usecases.AddImageToPDFUseCaseImpl;
 import com.example.ms_instructivos.aplication.usecases.FileUploadUseCaseImpl;
 import com.example.ms_instructivos.aplication.usecases.GeneratorQRUseCaseImpl;
 import com.example.ms_instructivos.aplication.usecases.PDFWaterMarkUseCaseImpl;
 import com.example.ms_instructivos.domain.models.Instructivo;
+import com.example.ms_instructivos.domain.ports.inputs.IAddImageToPDFUseCase;
+import com.example.ms_instructivos.domain.ports.inputs.IFileUploadUseCase;
+import com.example.ms_instructivos.domain.ports.inputs.IGeneratorQRUseCase;
+import com.example.ms_instructivos.domain.ports.inputs.IPDFWaterMarkUseCase;
 import com.example.ms_instructivos.domain.ports.outputs.ExternalMinioServicePort;
 import com.example.ms_instructivos.infrastructure.repositorys.dto.InstructivoDto;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,14 +28,16 @@ import java.util.Optional;
 public class InstructivoController {
 
     private final InstructivoService instructivoService;
-    private final FileUploadUseCaseImpl fileUploadUseCase;
-    private final GeneratorQRUseCaseImpl generatorQRUseCase;
-    private final AddImageToPDFUseCaseImpl addImageToPDFUseCase;
+    private final TipoInstructivoService tipoInstructivoService;
+    private final IFileUploadUseCase fileUploadUseCase;
+    private final IGeneratorQRUseCase generatorQRUseCase;
+    private final IAddImageToPDFUseCase addImageToPDFUseCase;
     private final ExternalMinioServicePort externalMinioServicePort;
-    private final PDFWaterMarkUseCaseImpl pdfWaterMarkUseCase;
+    private final IPDFWaterMarkUseCase pdfWaterMarkUseCase;
 
-    public InstructivoController(InstructivoService instructivoService, FileUploadUseCaseImpl fileUploadUseCase, GeneratorQRUseCaseImpl generatorQRUseCase, AddImageToPDFUseCaseImpl addImageToPDFUseCase, ExternalMinioServicePort externalMinioServicePort, PDFWaterMarkUseCaseImpl pdfWaterMarkUseCase) {
+    public InstructivoController(InstructivoService instructivoService, TipoInstructivoService tipoInstructivoService, FileUploadUseCaseImpl fileUploadUseCase, GeneratorQRUseCaseImpl generatorQRUseCase, AddImageToPDFUseCaseImpl addImageToPDFUseCase, ExternalMinioServicePort externalMinioServicePort, PDFWaterMarkUseCaseImpl pdfWaterMarkUseCase) {
         this.instructivoService = instructivoService;
+        this.tipoInstructivoService = tipoInstructivoService;
         this.fileUploadUseCase = fileUploadUseCase;
         this.generatorQRUseCase = generatorQRUseCase;
         this.addImageToPDFUseCase = addImageToPDFUseCase;
@@ -43,8 +51,9 @@ public class InstructivoController {
                                                @RequestParam("clasificacion") String clasificacion,
                                                @RequestParam("codigo") String codigo,
                                                @RequestParam("responsable") String responsable,
+                                               @RequestParam("tipo") Integer tipo,
                                                @RequestParam("file") MultipartFile file) throws IOException {
-        Instructivo instructivoResponse = instructivoService.crearInstructivo(new Instructivo(nombre,version,clasificacion,codigo,responsable));
+        Instructivo instructivoResponse = instructivoService.crearInstructivo(new Instructivo(nombre,version,clasificacion,codigo,responsable, tipoInstructivoService.obtenerTipoInstructivo(tipo).get()));
         String path = fileUploadUseCase.uploadFile(file.getInputStream(), (instructivoResponse.getId_instructivo()+".pdf"));
         generatorQRUseCase.generarQR(instructivoResponse.getId_instructivo()+"");
         String pathQR = addImageToPDFUseCase.generatePdfWithImage(instructivoResponse.getId_instructivo()+"");
@@ -54,6 +63,7 @@ public class InstructivoController {
     }
 
     @GetMapping("/{id}")
+    @Transactional
     public ResponseEntity<Instructivo> findById(@PathVariable Integer id){
         return instructivoService.obtenerInstructivo(id)
                 .map(Instructivo -> new ResponseEntity<>(Instructivo,HttpStatus.OK))
@@ -61,6 +71,7 @@ public class InstructivoController {
     }
 
     @GetMapping
+    @Transactional
     public ResponseEntity<List<Instructivo>> findAll(){
         List<Instructivo> instructivos = instructivoService.obtenerInstructivos();
         return new ResponseEntity<>(instructivos,HttpStatus.OK);
@@ -73,12 +84,13 @@ public class InstructivoController {
                                               @RequestParam("clasificacion") String clasificacion,
                                               @RequestParam("codigo") String codigo,
                                               @RequestParam("responsable") String responsable,
+                                              @RequestParam("tipo") Integer tipo,
                                               @RequestParam("file") MultipartFile file) throws IOException {
         String path = fileUploadUseCase.uploadFile(file.getInputStream(), (id+".pdf"));
         generatorQRUseCase.generarQR(id+"");
         String pathQR = addImageToPDFUseCase.generatePdfWithImage(id+"");
         externalMinioServicePort.uploadFile(pathQR, "instructivos_originales");
-        return instructivoService.actualizarInstructivo(id,new InstructivoDto(nombre,version,clasificacion,codigo,responsable))
+        return instructivoService.actualizarInstructivo(id,new InstructivoDto(nombre,version,clasificacion,codigo,responsable, tipoInstructivoService.obtenerTipoInstructivo(tipo).get()))
                 .map(Instructivo -> new ResponseEntity<>(Instructivo,HttpStatus.OK))
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
@@ -102,12 +114,23 @@ public class InstructivoController {
 
     @PutMapping("/anular/{id}")
     public ResponseEntity<Instructivo> updateAnular(@PathVariable Integer id) throws IOException {
-        String docs = externalMinioServicePort.getFile(id+".pdf");
-        System.out.println(docs);
-        pdfWaterMarkUseCase.addWatermark(docs,docs,"NO VIGENTE");
+        String path = externalMinioServicePort.getFile(id+".pdf");
+        pdfWaterMarkUseCase.addWatermark(path,path,"NO VIGENTE");
+        externalMinioServicePort.uploadFile(path, "instructivos_escaneados");
         return instructivoService.anularInstructivo(id)
                 .map(Instructivo -> new ResponseEntity<>(Instructivo,HttpStatus.OK))
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/download_originales/{id}")
+    public ResponseEntity<String> downloadOriginal(@PathVariable Integer id) {
+        String path = externalMinioServicePort.getPresignedObjectUrl(id+".pdf","instructivos_originales");
+        return new ResponseEntity<>(path,HttpStatus.OK);
+    }
+    @GetMapping("/download_escaneados/{id}")
+    public ResponseEntity<String> downloadEscaneado(@PathVariable Integer id) {
+        String path = externalMinioServicePort.getPresignedObjectUrl(id+".pdf","instructivos_escaneados");
+        return new ResponseEntity<>(path,HttpStatus.OK);
     }
 
 

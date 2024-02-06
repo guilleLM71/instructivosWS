@@ -21,8 +21,9 @@ public class Instructivo {
     private String clasificacion;
     private String codigo;
     private String responsable;
+    private Tipo tipoInstructivo;
 
-    public Instructivo(String nombre, double version, String clasificacion, String codigo, String responsable) {
+    public Instructivo(String nombre, double version, String clasificacion, String codigo, String responsable, Tipo tipo) {
         this.nombre = nombre;
         this.version = version;
         this.vigencia = false;
@@ -32,6 +33,7 @@ public class Instructivo {
         this.clasificacion = clasificacion;
         this.codigo = codigo;
         this.responsable = responsable;
+        this.tipoInstructivo = tipo;
     }
 
 }

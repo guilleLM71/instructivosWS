@@ -3,8 +3,10 @@ package com.example.ms_instructivos.infrastructure.adapters;
 import com.example.ms_instructivos.domain.ports.outputs.ExternalMinioServicePort;
 import com.example.ms_instructivos.infrastructure.config.MinioConfig;
 import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.http.Method;
 import io.minio.messages.Bucket;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
@@ -79,6 +81,20 @@ public class ExternalMinioServiceAdapter implements ExternalMinioServicePort {
             e.printStackTrace();
         }
         return "C://docs//"+fileName;
+    }
+
+    @Override
+    public String getPresignedObjectUrl(String fileName, String folder) {
+        String path = folder + "/" + fileName;
+        try {
+            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .bucket(defaultBucketName)
+                    .method(Method.GET)
+                    .object(path)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
 }

@@ -1,6 +1,7 @@
 package com.example.ms_instructivos.infrastructure.entitys;
 
 import com.example.ms_instructivos.domain.models.Instructivo;
+import com.example.ms_instructivos.domain.models.Tipo;
 import com.example.ms_instructivos.infrastructure.repositorys.dto.InstructivoDto;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,6 +31,10 @@ public class InstructivoEntity {
     private String clasificacion;
     private String codigo;
     private String responsable;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tipo_instructivo_id")
+    private TipoInstructivoEntity tipoInstructivo;
+
 
     public static InstructivoEntity fromDomainModel(Instructivo instructivo){
         return new InstructivoEntity(
@@ -42,7 +47,12 @@ public class InstructivoEntity {
                 instructivo.getFecha_fin(),
                 instructivo.getClasificacion(),
                 instructivo.getCodigo(),
-                instructivo.getResponsable()
+                instructivo.getResponsable(),
+                TipoInstructivoEntity
+                        .builder()
+                        .id(instructivo.getTipoInstructivo().getId())
+                        .nombre(instructivo.getTipoInstructivo().getNombre())
+                        .build()
         );
     }
 
@@ -52,7 +62,8 @@ public class InstructivoEntity {
                 instructivo.getVersion(),
                 instructivo.getClasificacion(),
                 instructivo.getCodigo(),
-                instructivo.getResponsable()
+                instructivo.getResponsable(),
+                instructivo.getTipo()
         );
     }
 
@@ -67,7 +78,11 @@ public class InstructivoEntity {
                 instructivoExiste.getFecha_fin(),
                 instructivoDto.getClasificacion(),
                 instructivoDto.getCodigo(),
-                instructivoDto.getResponsable()
+                instructivoDto.getResponsable(),
+                TipoInstructivoEntity.builder().id(instructivoDto.getTipo().getId())
+                        .nombre(instructivoDto.getTipo().getNombre())
+                        .build()
+
         );
     }
 
@@ -82,7 +97,12 @@ public class InstructivoEntity {
                 fecha_fin,
                 clasificacion,
                 codigo,
-                responsable);
+                responsable,
+                tipoInstructivo.toDomainModel()
+
+
+
+        );
 
     }
 

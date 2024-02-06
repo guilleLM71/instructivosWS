@@ -13,4 +13,6 @@ public interface ExternalMinioServicePort {
     void uploadFile(String fileName, String folder) throws IOException;
 
     String getFile(String key);
+
+    String getPresignedObjectUrl(String fileName, String folder);
 }

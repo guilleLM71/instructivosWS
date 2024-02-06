@@ -1,5 +1,6 @@
 package com.example.ms_instructivos.infrastructure.repositorys.dto;
 
+import com.example.ms_instructivos.domain.models.Tipo;
 import lombok.*;
 
 import java.util.Date;
@@ -15,4 +16,5 @@ public class InstructivoDto {
     private String clasificacion;
     private String codigo;
     private String responsable;
+    private Tipo tipo;
 }
